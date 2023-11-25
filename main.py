@@ -1,84 +1,9 @@
-import numpy as np
-import gym
-import random
+from helpers import play_game,initialize_game,dynamic_programming
 
-env = gym.make('FrozenLake-v1', render_mode="ansi",is_slippery=True)
-action_space_size = env.action_space.n
-state_space_size = env.observation_space.n
-q_table = np.zeros((state_space_size, action_space_size))
+env,q_table = initialize_game(is_slippery=False)
 
-total_rewards = []
-num_episodes = 10000
-max_steps = 100
-learning_rate = 0.2
-discount_rate = 0.99
-epsilon = 1
-max_epsilon = 1
-min_epsilon = 0.001
-exploration_decay_rate = 0.001
+q_table = dynamic_programming(env,q_table)
 
-for episode in range(num_episodes):
-    # Reset the environment
-    state = env.reset()[0]
-    done = False
-    episode_rewards = 0
+play_game(env,q_table)
 
-    for step in range(max_steps):
-        exp_tradeoff = random.uniform(0, 1)
-
-        if exp_tradeoff > epsilon:
-            # exploitation
-            action = np.argmax(q_table[state, :])
-        else:
-            # exploration
-            action = env.action_space.sample()
-
-        new_state, reward, done, truncated, info = env.step(action)
-        q_table[state, action] = q_table[state, action] * (1 - learning_rate) + learning_rate * (reward + discount_rate * np.max(q_table[new_state, :]))
-        episode_rewards += reward
-
-        state = new_state
-        if done == True:
-            break
-
-    epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-exploration_decay_rate*episode)
-    total_rewards.append(episode_rewards)
-
-print(q_table)
-
-wins = 0
-lost = 0
-max_steps = 1000
-for episode in range(1000):
-    state = env.reset()[0]
-    step = 0
-    done = False
-    print("****************************************************")
-    print("EPISODE ", episode+1)
-    for step in range(max_steps):
-        #print(env.render())
-        action = np.argmax(q_table[state,:])
-        
-        new_state, reward, done, truncated, info = env.step(action)
-        
-        if done:
-            #print(env.render())
-            if reward == 1:
-                print("****You reached the goal!****")
-                wins = wins + 1
-            else:
-                print("****You fell through a hole!****")
-                lost = lost + 1
-            break
-        state = new_state
-print("Wins:",wins)
-print("Lost:",lost)
 env.close()
-
-#rewards_per_thousand_episodes = np.split(np.array(rewards), num_episodes/1000)
-#count = 1000
-
-#print("********Average reward per thousand episodes********\n")
-#for r in rewards_per_thousand_episodes:
-#    print(count, ": ", str(sum(r/1000)))
-#    count += 1000
