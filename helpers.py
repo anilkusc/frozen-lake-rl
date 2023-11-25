@@ -70,3 +70,31 @@ def dynamic_programming(env,q_table,
 
         epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-exploration_decay_rate*episode)
     return q_table
+
+def monte_carlo(env,q_table,
+                        max_steps = 100,learning_rate = 0.7,discount_rate = 0.99,epsilon = 1,max_epsilon = 1,min_epsilon = 0.001,exploration_decay_rate = 0.001,num_episodes = 10000):
+    for episode in range(num_episodes):
+        # Reset the environment
+        state = env.reset()[0]
+        done = False
+        transitions = []
+        global_reward = 0
+        for step in range(max_steps):
+            
+            action = find_action(epsilon,q_table,state,env)
+
+            new_state, reward, done, _, _ = env.step(action)
+            transitions.append([state,action,reward])
+            state = new_state
+            global_reward = reward + discount_rate * global_reward
+            if done:
+                break
+            
+        average_reward = global_reward / len(transitions)
+        for s,a,r in reversed(transitions):
+            q_table[s, a] = q_table[s, a]* (1 - learning_rate) + learning_rate * average_reward
+        epsilon = min_epsilon + (max_epsilon - min_epsilon) * np.exp(-exploration_decay_rate*episode)
+        completion_percentage = (episode + 1) / num_episodes * 100
+        print(f"Episode {episode + 1}/{num_episodes} - Completion: {completion_percentage:.2f}%")
+
+    return q_table
